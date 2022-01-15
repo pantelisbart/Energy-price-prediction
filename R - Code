@@ -1,1 +1,155 @@
 
+
+
+#DATA PROCCESSING
+data$DATES<-as.Date(data$DATES)
+data$WEEKDAY<-as.factor(data$WEEKDAY)
+data$HOLIDAY<-as.factor(data$HOLIDAY)
+data$PRICE<-as.numeric(data$PRICE)
+data$DEMAND<-as.numeric(data$DEMAND)
+data$LIGNITE<-as.numeric(data$LIGNITE)
+data$GAS<-as.numeric(data$GAS)
+data$HYDRO<-as.numeric(data$HYDRO)
+data$RENEWABLE<-as.numeric(data$RENEWABLE)
+data$SEASON<-as.factor(data$SEASON)
+
+# Histogram of energy prices
+par(mfrow=c(1,2))
+x<-seq(0,100,0.01)
+prices <- data$PRICE
+hist(prices,main="Histogram of Dam prices",prob=TRUE,xlab="Dam prices",col="light green")
+abline(v=68.51,col="black",lwd=3, lty=2)
+abline(v=80.26,col="red",lwd=3, lty=2)
+legend(90, 0.015, legend=c("Median","Mean"),
+       col=c("black","red"), lty=3, cex=1.0)
+
+
+
+#Stepwise with cross validation
+
+#stepAIC for model1 : price ~ . linear regression
+set.seed(10)
+# we will partition into 70% training and 30% validation
+trainrows <- sample(rownames(data), dim(data)[1]*0.7)
+traindata <- data[trainrows, ]
+# we will set the difference of the training into the validation set i.e. 30%
+validrows <- setdiff(rownames(data), trainrows)
+validdata <- data[validrows, ]
+
+
+#MULTIPLE LINEAR MODEL
+m1<-lm(PRICE~ .,data=traindata)
+summary(m1)
+pr<-predict(m1)
+pr[1:5]
+
+
+
+#STEPWISE LEADS TO THESE VARIABLES
+# DATES , LIGNITE,GAS,RENEWABLE,HYDRO
+
+
+m10<-stepAIC(m1,direction="both")
+summary(m10)
+plot(resid(m10),fitted(m10))
+qqnorm(resid(m10))
+pred<-predict(m10,newdata=validdata)
+vres<-data.frame(validdata$PRICE,pred,residuals=validdata$PRICE - pred)
+head(round(vres,2))
+
+
+finalpred<-predict(m10,newdata=validdata)#*sd(data$PRICE)+mean(data$PRICE)
+finalpred[1:5]
+
+cor(finalpred,validdata$PRICE)
+
+
+
+#lognormal with variables DATES + WEEKDAY + DEMAND + LIGNITE + GAS +  HYDRO
+m1<-lm(log(PRICE) ~ DATES + WEEKDAY + DEMAND + LIGNITE + GAS + 
+         HYDRO,data=traindata)
+summary(m1)
+
+pred<-predict(m1,newdata=validdata)
+vres<-data.frame(validdata$PRICE,exp(pred),residuals=validdata$PRICE - exp(pred))
+round(head(vres),2)
+
+#produce added variable plots
+avPlots(m1)
+
+#random forest
+model <- randomForest(PRICE ~  DATES + WEEKDAY + DEMAND + LIGNITE + GAS + 
+                        HYDRO , data = traindata,importance=TRUE)
+print(model)
+plot(model)
+
+fitForest1 <-predict(model, newdata = validdata)
+
+res<-validdata$PRICE-fitForest1
+
+results<-cbind(fitForest1,validdata$PRICE,res)
+colnames(results)<-c("Original Data","Predictions","Difference")
+head(round(results,2))
+
+R2 <- 1 - (sum((validdata$PRICE-fitForest1)^2)/sum((validdata$PRICE-mean(validdata$PRICE))^2))
+mean(model$rsq)
+
+#plot Random Forest 
+x <- ctree(PRICE ~   WEEKDAY + DEMAND + LIGNITE + GAS + HYDRO, data=traindata)
+plot(x, type="simple")
+
+#Decicion tree
+#Assigning a variable named *fit* to the model
+
+fit <- rpart(PRICE ~  DATES + WEEKDAY + DEMAND + LIGNITE + GAS + 
+               HYDRO,data = traindata) 
+summary(fit)
+#Drawing a decision tree and labelling the values to it
+plot(fit,uniform=TRUE)
+text(fit,cex=0.9)
+
+#Predicting the price of DAM of first 6 data
+pred<-predict(fit,newdata=validdata)
+
+#Actual DAM Prices are
+print(data$PRICE)
+
+res<-validdata$PRICE-pred
+results<-cbind(validdata$PRICE,pred,res)
+colnames(results)<-c("Actual","Predicted","Dif")
+head(round(results,2))
+
+R2 <- 1 - (sum((validdata$PRICE-pred)^2)/sum((validdata$PRICE-mean(validdata$PRICE))^2))
+
+
+# Fit the model on the training set
+set.seed(123)
+model <- train(
+  PRICE ~   DATES + WEEKDAY + DEMAND + LIGNITE + GAS + 
+    HYDRO, data = traindata, method = "xgbTree",
+  trControl = trainControl("cv", number = 10)
+)
+# Best tuning parameter
+model$bestTune
+
+
+# Make predictions on the test data
+predicted <- model %>% predict(validdata)
+head(predicted)
+
+#The function varImp() [in caret] displays the importance of variables in percentage:
+varImp(model)
+
+
+# Compute the average prediction error RMSE
+RMSE(predicted, validdata$PRICE)
+
+
+# Compute model prediction accuracy rate
+res1<-validdata$PRICE-predicted
+results<-data.frame()
+results<-cbind(validdata$PRICE,predicted,res1)
+
+R2 <- 1 - (sum((validdata$PRICE-predicted)^2)/sum((validdata$PRICE-mean(validdata$PRICE))^2))
+R2
+
