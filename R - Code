@@ -26,7 +26,6 @@ legend(90, 0.015, legend=c("Median","Mean"),
 
 
 #Stepwise with cross validation
-
 #stepAIC for model1 : price ~ . linear regression
 set.seed(10)
 # we will partition into 70% training and 30% validation
@@ -46,21 +45,21 @@ pr[1:5]
 
 
 #STEPWISE LEADS TO THESE VARIABLES
-# DATES , LIGNITE,GAS,RENEWABLE,HYDRO
-
+# DATES,LIGNITE,GAS,RENEWABLE,HYDRO
 
 m10<-stepAIC(m1,direction="both")
 summary(m10)
+
+#Residuals plot
 plot(resid(m10),fitted(m10))
 qqnorm(resid(m10))
+
+#predictions of multiple linear regression
 pred<-predict(m10,newdata=validdata)
 vres<-data.frame(validdata$PRICE,pred,residuals=validdata$PRICE - pred)
-head(round(vres,2))
-
-
 finalpred<-predict(m10,newdata=validdata)#*sd(data$PRICE)+mean(data$PRICE)
-finalpred[1:5]
 
+#Correlation between predictions and actual prices, it is also a way to see if the model perform well.
 cor(finalpred,validdata$PRICE)
 
 
@@ -86,13 +85,12 @@ plot(model)
 fitForest1 <-predict(model, newdata = validdata)
 
 res<-validdata$PRICE-fitForest1
-
 results<-cbind(fitForest1,validdata$PRICE,res)
 colnames(results)<-c("Original Data","Predictions","Difference")
-head(round(results,2))
 
+# Adjusted R squared
 R2 <- 1 - (sum((validdata$PRICE-fitForest1)^2)/sum((validdata$PRICE-mean(validdata$PRICE))^2))
-mean(model$rsq)
+
 
 #plot Random Forest 
 x <- ctree(PRICE ~   WEEKDAY + DEMAND + LIGNITE + GAS + HYDRO, data=traindata)
@@ -114,14 +112,13 @@ pred<-predict(fit,newdata=validdata)
 #Actual DAM Prices are
 print(data$PRICE)
 
+#Decision Tree predictions
 res<-validdata$PRICE-pred
 results<-cbind(validdata$PRICE,pred,res)
 colnames(results)<-c("Actual","Predicted","Dif")
-head(round(results,2))
-
 R2 <- 1 - (sum((validdata$PRICE-pred)^2)/sum((validdata$PRICE-mean(validdata$PRICE))^2))
 
-
+#XG Boost model
 # Fit the model on the training set
 set.seed(123)
 model <- train(
@@ -129,17 +126,9 @@ model <- train(
     HYDRO, data = traindata, method = "xgbTree",
   trControl = trainControl("cv", number = 10)
 )
-# Best tuning parameter
-model$bestTune
-
 
 # Make predictions on the test data
 predicted <- model %>% predict(validdata)
-head(predicted)
-
-#The function varImp() [in caret] displays the importance of variables in percentage:
-varImp(model)
-
 
 # Compute the average prediction error RMSE
 RMSE(predicted, validdata$PRICE)
@@ -150,6 +139,7 @@ res1<-validdata$PRICE-predicted
 results<-data.frame()
 results<-cbind(validdata$PRICE,predicted,res1)
 
+#adjusted R squared
 R2 <- 1 - (sum((validdata$PRICE-predicted)^2)/sum((validdata$PRICE-mean(validdata$PRICE))^2))
-R2
+
 
