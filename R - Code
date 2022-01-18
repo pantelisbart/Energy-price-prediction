@@ -40,12 +40,9 @@ validdata <- data[validrows, ]
 m1<-lm(PRICE~ .,data=traindata)
 summary(m1)
 pr<-predict(m1)
-pr[1:5]
-
-
 
 #STEPWISE LEADS TO THESE VARIABLES
-# DATES,LIGNITE,GAS,RENEWABLE,HYDRO
+# DATES,LIGNITE,GAS,RENEWABLE,HYDRO, WEEKDAY
 
 m10<-stepAIC(m1,direction="both")
 summary(m10)
@@ -62,6 +59,7 @@ finalpred<-predict(m10,newdata=validdata)#*sd(data$PRICE)+mean(data$PRICE)
 #Correlation between predictions and actual prices, it is also a way to see if the model perform well.
 cor(finalpred,validdata$PRICE)
 
+#Correlation outcome: 93,7%, predictions and actual prices are higly positive correlated.
 
 
 #lognormal with variables DATES + WEEKDAY + DEMAND + LIGNITE + GAS +  HYDRO
@@ -71,7 +69,6 @@ summary(m1)
 
 pred<-predict(m1,newdata=validdata)
 vres<-data.frame(validdata$PRICE,exp(pred),residuals=validdata$PRICE - exp(pred))
-round(head(vres),2)
 
 #produce added variable plots
 avPlots(m1)
