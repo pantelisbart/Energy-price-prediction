@@ -1,7 +1,7 @@
 
 
 
-#DATA PROCCESSING
+#Data Preprocessing
 data$DATES<-as.Date(data$DATES)
 data$WEEKDAY<-as.factor(data$WEEKDAY)
 data$HOLIDAY<-as.factor(data$HOLIDAY)
@@ -13,7 +13,7 @@ data$HYDRO<-as.numeric(data$HYDRO)
 data$RENEWABLE<-as.numeric(data$RENEWABLE)
 data$SEASON<-as.factor(data$SEASON)
 
-# Histogram of energy prices
+# Histogram of energy prices. As we can see there is no normality in the data.
 par(mfrow=c(1,2))
 x<-seq(0,100,0.01)
 prices <- data$PRICE
