@@ -131,7 +131,6 @@ predicted <- model %>% predict(validdata)
 # Compute the average prediction error RMSE
 RMSE(predicted, validdata$PRICE)
 
-
 # Compute model prediction accuracy rate
 res1<-validdata$PRICE-predicted
 results<-data.frame()
