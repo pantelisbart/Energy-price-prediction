@@ -1,5 +1,5 @@
 # Energy-price-prediction
-Energy price prediction in Greece
+Energy price prediction for Greece
 
 In this project I will try to predict the energy price of Greece in order to help the company with the cash flow planning.
 
