@@ -57,10 +57,11 @@ vres<-data.frame(validdata$PRICE,pred,residuals=validdata$PRICE - pred)
 finalpred<-predict(m10,newdata=validdata)#*sd(data$PRICE)+mean(data$PRICE)
 
 #Correlation between predictions and actual prices, it is also a way to see if the model perform well.
+#Correlation outcome: 93,7%, predictions and actual prices are higly positive correlated.
 cor(finalpred,validdata$PRICE)
 
-#Correlation outcome: 93,7%, predictions and actual prices are higly positive correlated.
-
+#adjusted R sqaures = 87,4%
+R2 <- 1 - (sum((validdata$PRICE-finalpred)^2)/sum((validdata$PRICE-mean(validdata$PRICE))^2))
 
 #lognormal with variables DATES + WEEKDAY + DEMAND + LIGNITE + GAS +  HYDRO
 m1<-lm(log(PRICE) ~ DATES + WEEKDAY + DEMAND + LIGNITE + GAS + 
@@ -79,14 +80,14 @@ model <- randomForest(PRICE ~  DATES + WEEKDAY + DEMAND + LIGNITE + GAS +
 print(model)
 plot(model)
 
+#Predictions
 fitForest1 <-predict(model, newdata = validdata)
-
 res<-validdata$PRICE-fitForest1
 results<-cbind(fitForest1,validdata$PRICE,res)
 colnames(results)<-c("Original Data","Predictions","Difference")
 
-# Adjusted R squared
-R2 <- 1 - (sum((validdata$PRICE-fitForest1)^2)/sum((validdata$PRICE-mean(validdata$PRICE))^2))
+# Adjusted R squared = 94,2%
+mean(model$rsq)
 
 
 #plot Random Forest 
