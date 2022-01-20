@@ -139,4 +139,25 @@ results<-cbind(validdata$PRICE,predicted,res1)
 #adjusted R squared
 R2 <- 1 - (sum((validdata$PRICE-predicted)^2)/sum((validdata$PRICE-mean(validdata$PRICE))^2))
 
+#Prophet Time-Series
+library(prophet)
+
+#We only need Dates and Prices for our prophet model
+dat<-cbind(data$DATES,data$PRICE)
+dat<-as.data.frame(dat)
+names(dat) <- c('ds', 'y')
+dat$ds<-as.Date(dat$ds)
+
+#Convert the variables into time series
+f1<-prophet(dat,daily.seasonality = TRUE,yearly.seasonality=TRUE)
+
+#Predicted values
+forecast <- make_future_dataframe(f1, periods=3)
+pred<-predict(f1,forecast)
+tail(pred[c("ds","yhat","yhat_lower","yhat_upper")])
+pred$yhat[1:3]
+
+#Time Series Plots
+plot(f1,pred,ylab="Dam prices",xlab="Dates",main="Dam Prices Prediction with Prophet Algorithm")
+prophet_plot_components(f1,pred)
 
